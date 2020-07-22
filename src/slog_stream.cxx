@@ -10,7 +10,7 @@ slog::syslog_stream::syslog_stream(
         streambuf(name, type)
     { }
 
-slog::syslog_stream& slog::syslog_stream::operator<<(slog::level level){
-        streambuf.set_level(level);
+slog::syslog_stream& slog::syslog_stream::operator<<(slog::level level) noexcept {
+        this->streambuf.set_level(level);
         return (*this);
 }
