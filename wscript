@@ -28,40 +28,41 @@ if sys.platform.lower() not in ["linux"]:#check for darwin. dows darwin support 
 
 def configure(ctx):
 
-    ctx.setenv('debug')
     ctx.load('compiler_cxx')
-    ctx.env.CXXFLAGS=DEBUG_CXXFLAGS
+
+    from waflib import Options
+    if Options.options.debug:
+        ctx.env.CXXFLAGS=DEBUG_CXXFLAGS
+    else:
+        ctx.env.CXXFLAGS=RELEASE_CXXFLAGS
+
     ctx.env.SOURCES=glob.glob(SOURCES)
 
-    ctx.setenv('release')
-    ctx.load('compiler_cxx')
-    ctx.env.CXXFLAGS=RELEASE_CXXFLAGS
-    ctx.env.SOURCES=glob.glob(SOURCES)
 
 def options(opt):
     opt.load('compiler_cxx')
 
-def init(ctx):
-    # Setup contexts build_debug, build_release, clean_debug, ...
-    from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
-    for x in (BuildContext, CleanContext, InstallContext, UninstallContext):
-        for y in ['debug','release']:
-            class tmp(x):
-                variant=y
-                cmd=x.__name__.replace('Context','').lower()+'_'+y
+    #Add configuration options
+    syslog = opt.add_option_group ("%s Options" % name.upper())
+
+    syslog.add_option('--debug',
+                      action='store_true',
+                      default=False,
+                      help='build with debug information')
 
 def build(ctx):
-    if not ctx.variant:
-        import waflib.Options
-        for x in ['debug','release']:
-            waflib.Options.commands.insert(0,ctx.cmd+'_'+x)    
-    else:
-        ctx.shlib(source=ctx.env.SOURCES,target=name,includes=['./include'],install_path='${PREFIX}')
+    ctx.shlib(
+        source=ctx.env.SOURCES,
+        target=name,
+        includes=['./include'],
+        install_path='${PREFIX}/lib')
 
-    ctx.install_files('${PREFIX}/include/%s/' % name, ctx.path.ant_glob(['**/*.hxx'], remove=False))
+    ctx.install_files(
+        '${PREFIX}/include/%s/' % name, 
+        ctx.path.ant_glob(['**/*.hxx'], 
+        remove=False))
 
     from waflib import Options
-    # process libshm.pc.in -> libshm.pc - by default it use the task "env" attribute
     pcf = ctx(
         features = 'subst',
         source = '%s.pc.in' % name,
